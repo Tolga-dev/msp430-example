@@ -3,15 +3,36 @@
 
 #define DELAY 2000
 #define LONG_DELAY 2000
+#define SW BIT3
+#define LED BIT0
 
+#define RED     BIT0
+#define GREEN   BIT6
 
 int main(void) {
+    WDTCTL = WDTPW | WDTHOLD;
 
+    P1DIR |= GREEN;
+    P1DIR &= ~SW;
+    P1REN |= SW;
+    P1OUT |= SW;
 
-    return 0;
+    P1IES &= ~SW;
+    P1IE |= SW;
+
+    __bis_SR_register(LPM4_bits + GIE);
+
+}
+#pragma vector=PORT1_VECTOR
+__interrupt void Port_1()
+{
+    P1OUT ^= GREEN;
+    P1IFG &= ~SW;
 }
 
 
+
+/*
 void TogglingLedWithTimerMode()
 {
     WDTCTL = WDTPW | WDTHOLD;   // Stop watchdog timer
@@ -35,9 +56,9 @@ __interrupt void TMR0()
             TACTL&=~(TAIFG); //Reset the interrupt flag
         }
 }
+*/
 
-
-
+/*
 void UsingPISR()
 {
 
@@ -77,8 +98,62 @@ __interrupt void P1_Function()
     P1IFG&=~BIT3; // Reset interrupt flag
 
 }
+*/
 
+void ButtonWithSwitchingLeds()
+{
+    P1DIR |= RED + GREEN;
+    P1DIR &= ~SW;
+    P1REN |= SW;
+    P1OUT |= SW;
 
+    volatile unsigned int flag = 0;
+
+    while(1)
+    {
+      if(!(P1IN & SW))
+      {
+          __delay_cycles(20000);
+
+          if(!(P1IN & SW))
+          {
+              while(!(P1IN & SW));
+              flag = !flag;
+          }
+      }
+      if(flag)                     // Check flag value
+      {
+          P1OUT &= ~GREEN;            // Green -> OFF
+          P1OUT |= RED;               // Red -> ON
+      }
+      else
+      {
+          P1OUT &= ~RED;              // Red -> OFF
+          P1OUT |= GREEN;             // Green -> ON
+      }
+    }
+}
+void ButtonWithDebouncing2()
+{
+
+    P1DIR |= LED;
+    P1DIR &= ~SW;
+    P1REN |= SW;
+    P1OUT |= SW;
+
+    while(1)
+    {
+        if(!(P1IN & SW))
+        {
+            __delay_cycles(20000);
+
+            while(!(P1IN & SW));
+
+            P1OUT ^= LED;
+
+        }
+    }
+}
 void ButtonWithDebouncing()
 {
     WDTCTL = WDTPW | WDTHOLD;   // Stop watchdog timer
@@ -100,7 +175,29 @@ void ButtonWithDebouncing()
 
        }
 }
+void Button2()
+{
+    P1DIR |= BIT0;
 
+    P1DIR &= ~BIT3;
+    P1REN |= BIT3;
+    P1OUT |= BIT3;
+
+    while(1)
+    {
+        if(P1IN & BIT3) // not pressed
+        {
+            P1OUT &= ~BIT0;
+
+        }
+        else
+        {
+            P1OUT |= BIT0;
+        }
+
+    }
+
+}
 void Button()
 {
     WDTCTL = WDTPW | WDTHOLD;   // Stop watchdog timer
@@ -164,6 +261,24 @@ void ChangingFrequencyOfBlinking()
 
        }
 }
+void MultiBlinkedLed2()
+{
+    WDTCTL = WDTPW | WDTHOLD;
+
+       P1DIR |= BIT0 | BIT6;
+
+       P1OUT |= BIT0;
+       P1OUT &= ~BIT6;
+
+       volatile unsigned long i;
+       while(1)
+       {
+           P1OUT ^= BIT0 | BIT6;
+
+           for(i = 0; i < 20000; i++);
+       }
+
+}
 void MultiBlinkLed()
 {
     volatile int i; //Force the compliler to not optimize the variable 'i'
@@ -183,6 +298,30 @@ void MultiBlinkLed()
 
             for(i=DELAY;i>0;i--); //Delay
         }
+}
+
+
+
+void SingleBlinkedLed2()
+{
+    WDTCTL = WDTPW | WDTHOLD;
+       P1DIR |= 0x01; // BIT0;
+
+       volatile unsigned int i;
+
+       while(1)
+       {
+           P1OUT ^= 0x01;
+
+           i = 10000;
+
+           while(i != 0)
+           {
+               i--;
+           }
+
+       }
+
 }
 
 void SingleBlinkLed() // toggling on and off with p1.0
