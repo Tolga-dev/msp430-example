@@ -4,13 +4,79 @@
 #define DELAY 2000
 #define LONG_DELAY 2000
 
-void main() {
+
+int main(void) {
 
 
+    return 0;
+}
+
+
+void TogglingLedWithTimerMode()
+{
+    WDTCTL = WDTPW | WDTHOLD;   // Stop watchdog timer
+
+       P1DIR |= BIT0;
+
+       TACTL |= TASSEL_2+MC_2+TAIE;
+
+      __low_power_mode_0();
+
+}
+
+#pragma vector=TIMER0_A1_VECTOR
+__interrupt void TMR0()
+{
+    if(TAIV==TA0IV_TAIFG)   //Check if Timer overflow caused the interrupt
+                            //This would be required in projects where multiple interrupts have
+                            //the same interrupt vector. Here it is only optional.
+        {
+            P1OUT^=BIT0; //Toggle the LED
+            TACTL&=~(TAIFG); //Reset the interrupt flag
+        }
 }
 
 
 
+void UsingPISR()
+{
+
+
+    WDTCTL = WDTPW | WDTHOLD;
+
+    P1DIR &= ~BIT3;
+    P1REN |= BIT3;
+    P1OUT |= BIT3;
+
+    P1IE|=BIT3;
+    P1IE |= BIT3;
+
+    __enable_interrupt();
+
+    P1DIR|=BIT0; //Set P1.0 as output
+    P1OUT&=~BIT0; //Initially turn off the LED
+
+
+    __low_power_mode_0(); //Go to low power mode 0
+
+}
+
+#pragma vector=PORT1_VECTOR
+__interrupt void P1_Function()
+{
+    int i; //Declare counter variable
+    P1OUT^=BIT0; //Toggle the LED
+    i=0; //Start a counter variable
+    while(i<500) //Wait till the switch is not pressed continusouly for 500 loop cycles
+    {
+        if((P1IN&BIT3))
+            i++;  //If the switch is not pressed, increment the counter variable
+        else
+            i=0; //If the switch is pressed, reset the counter variable
+    }
+    P1IFG&=~BIT3; // Reset interrupt flag
+
+}
 
 
 void ButtonWithDebouncing()
@@ -118,6 +184,7 @@ void MultiBlinkLed()
             for(i=DELAY;i>0;i--); //Delay
         }
 }
+
 void SingleBlinkLed() // toggling on and off with p1.0
 {
 
