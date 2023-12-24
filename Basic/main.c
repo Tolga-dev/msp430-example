@@ -21,6 +21,9 @@ int main(void) {
     P1IE |= SW;
 
     __bis_SR_register(LPM4_bits + GIE);
+    // this function, sets the selected bits of the status register(input parameters of the function)
+    // GIE, for general interrupt enable, without it the interrupts are disabled, and the ISR never will be attended and for that, code does not work.
+    //
 
 }
 #pragma vector=PORT1_VECTOR
