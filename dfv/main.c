@@ -2,12 +2,57 @@
 #include <stdio.h>
 
 #define DELAY 2000
+#define LONG_DELAY 2000
 
 void main() {
 
 
 }
 
+
+
+
+
+void ButtonWithDebouncing()
+{
+    WDTCTL = WDTPW | WDTHOLD;   // Stop watchdog timer
+       P1DIR&=~BIT3; //Set P1.3 as input
+       P1REN|=BIT3; //Enable pullup/pulldown resistors for P1.3
+       P1OUT|=BIT3; //Set P1.3 to have pull up resistors
+
+       P1DIR|=BIT0; //Set P1.0 as output
+       P1OUT&=~BIT0; //Initially turn off the LED
+
+       while(1)
+       {
+           if((P1IN&BIT3)==0) //If the switch is pressed
+           {
+
+            P1OUT^=BIT0; //Toggle the LED
+             __delay_cycles(LONG_DELAY ); //Wait for switch to be unpressed
+           }
+
+       }
+}
+
+void Button()
+{
+    WDTCTL = WDTPW | WDTHOLD;   // Stop watchdog timer
+
+       P1DIR &= ~BIT3; //Set P1.3 as input
+       P1REN |= BIT3; //Enable pullup/pulldown resistors for P1.3
+       P1OUT |= BIT3; //Set P1.3 to have pull up resistors
+
+       P1DIR |=BIT0; //Set P1.0 as output
+
+       while(1) //Run the below code forever
+       {
+           if((P1IN&BIT3)==(BIT3)) //If P1.3 is logical HIGH
+               P1OUT&=~BIT0; //Turn off the LED
+           else
+               P1OUT|=BIT0; //Else, turn on the LED
+       }
+}
 
 void ChangingFrequencyOfMultipleBlinking()
 {
