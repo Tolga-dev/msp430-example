@@ -10,6 +10,15 @@
 #define RED   BIT6
 
 int main(void) {
+
+
+
+}
+
+/*
+
+void PowerOptimizationWithRegisterInterrupt()
+{
     WDTCTL = WDTPW | WDTHOLD;
 
     P1DIR |= GREEN;
@@ -24,14 +33,16 @@ int main(void) {
     // this function, sets the selected bits of the status register(input parameters of the function)
     // GIE, for general interrupt enable, without it the interrupts are disabled, and the ISR never will be attended and for that, code does not work.
 
+
 }
+
 #pragma vector=PORT1_VECTOR
 __interrupt void Port_1()
 {
     P1OUT ^= GREEN;
     P1IFG &= ~SW;
 }
-
+*/
 
 
 /*

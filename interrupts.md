@@ -77,10 +77,62 @@ ISR;
 	* setting low power mode puts the microcontroller "to sleep" so usually, interrupts would need to enabled as well.
 	* enter lpm3 and enable interrupts using, 
 		__bis_SR_register(LPM3_bits + GIE);
-		
-		
-	
-	
 
+		
+#### Timers
+	* essential to almost any embedded applications
+		* generate fixed-period events
+		* periodic wakeup
+		* count edges
+	* five types of msp430 timer modules.
+		* basic timer
+		* rtc
+			*two model, counter and calendar
+			* bt and rtc share interrupt vectors
+		* watchdog timer
+		* Timer A
+			* the most versatile one
+		* Timer B
+
+##### Applications
+	* basic timer / rtc
+		* rtc-specific functionality
+		* lcd functions
+		* interrupt intervals up to two seconds
+	* wdt / wdt+
+		* can reset device automatically
+		* interrupt intervals up to one second
+	* timer a/b 
+		* widest interrupt interval rane
+		* Timer_A/B for PWM, capture, and more-complex counting situations
+	* Use the Basic Timer and Watchdog Interval timer for simple interval situations
+		
+#### Timer 
+* Timer A and Timer B. Timer B is slightly different than Timer A and also has few more features.
+	* Timer A support 4 different clock sources; aclk, smclk, and 2 external sources, taclk or inclk
+* Timer has 4 mode
+	* stop mode
+		* halted
+	* up mode
+		* timer reatedly counters from 0 to value
+		
+	* continuous 
+		* timer repeatedly counter from 0 to 0xffff
+	* up/down 
+		* from 0 to val in taccr0 and back down to zero
+##### Registers
+* Tar
+	* timer counter register: holds current count for timer a
+* Taccrx
+	* timer capture/compare register: holds a val to compare against tar
+* tactl
+	* control
+* tacctl
+	* capture and control
+* taiv
+	* interrupt vector register
+
+* http://www.ocfreaks.com/msp430-timer-programming-tutorial/
+* https://www.ti.com/lit/ml/slap113/slap113.pdf
 * https://software-dl.ti.com/trainingTTO/trainingTTO_public_sw/MSP430_LaunchPad_Workshop/v4/Chapters/MSP430m07_LPM.pdf
 * https://courses.cs.washington.edu/courses/cse466/11au/calendar/04-Interrupts-posted.pdf
