@@ -30,7 +30,57 @@ ISR;
 	* should be short and fast
 	* should affects rest of the system as litte as possible
 
-Summary
-* 
+#### P1 and P2 interrupts
 
+* only transitions cause interrupts
+* p1ifg & p2ifg (port1 and port2 interrupt edge select reg)
+	* bit 0: pxifg is set on low to high transtion
+	* bit 1: pxifg is set on high to low transtion
+* P1IES & P2IES (port1 and port2 interrupt flag registers)
+	* bit 0: no interrupt pending
+	* bit 1: interrupt pending
+
+* P1IE & P2IE (port1 and port2 enable reg)
+	* bit 0: interrupt disabled
+	* bit 1: interrupt enabled
+
+#### Timer interrupt
+
+#### Pulse Width Modulation (PWM)
+* pulse width modulation is used to control analog circuits with a processor's digital outputs
+* a technique of digitally encoding analog signal levels
+	* the duty cycle of a square wave is modulated to encode a specific analog signal level
+	* it is digital, at any given instant of time
+* the ovltage or current source is supplied to the analog load by means of a repeating series of on and off pulses
+
+#### Processor clock speeds
+	* often, the most important factor for reducing power consumption is slowing the clock down
+		* faster clock = higher performance, more power
+		* slower clock = lower performance, less power
+		* we can reduce clock time with assembly code or c code
+	* another method to reduce power consumption is to turn off some of the system clocks
+		* active mode, am: cpu, all clocks, and enableed modules are active(~300 uA)
+		* LPM0: cpu and mclk are disabled, smclk and aclk remain active
+		* LPM3: cpu, mclk, smclk and dco are disable; only aclk remains active
+		* LPM4: cpu and all clocks disabled, ram is retained
+	* a device is said to be sleeping when in low-power mode, waking refers to returning to active mode	
+	
+#### Principles of Low-Power Apps
+	* maximize the time in lpm3 mode
+	* use interrupts to wake the processor
+	* switch on peripherals only when needed
+	* use low power integrated peripherals; timer a and timer b
+	* calculated branches instead of flag polling
+	* fast table look-ups instead of calculations
+	* aboid frequent subroutine and function calls
+	* longer software routines should use single-cycle cpu registers
+	* setting low power mode puts the microcontroller "to sleep" so usually, interrupts would need to enabled as well.
+	* enter lpm3 and enable interrupts using, 
+		__bis_SR_register(LPM3_bits + GIE);
+		
+		
+	
+	
+
+* https://software-dl.ti.com/trainingTTO/trainingTTO_public_sw/MSP430_LaunchPad_Workshop/v4/Chapters/MSP430m07_LPM.pdf
 * https://courses.cs.washington.edu/courses/cse466/11au/calendar/04-Interrupts-posted.pdf

@@ -6,8 +6,8 @@
 #define SW BIT3
 #define LED BIT0
 
-#define RED     BIT0
-#define GREEN   BIT6
+#define GREEN     BIT0
+#define RED   BIT6
 
 int main(void) {
     WDTCTL = WDTPW | WDTHOLD;
@@ -23,7 +23,6 @@ int main(void) {
     __bis_SR_register(LPM4_bits + GIE);
     // this function, sets the selected bits of the status register(input parameters of the function)
     // GIE, for general interrupt enable, without it the interrupts are disabled, and the ISR never will be attended and for that, code does not work.
-    //
 
 }
 #pragma vector=PORT1_VECTOR
