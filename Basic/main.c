@@ -1,17 +1,119 @@
 #include <msp430.h> 
 #include <stdio.h>
+#include <stdint.h>
 
 #define DELAY 2000
-#define LONG_DELAY 2000
+#define LONG_DELAY 20000
 #define SW BIT3
 #define LED BIT0
 
 #define GREEN     BIT0
 #define RED   BIT6
 
-int main(void) {
+#define LED1  BIT0
+#define LED2 BIT6
+#define B1    BIT3
 
 
+void main (void)
+{
+
+}
+
+void TogglesLed()
+{
+    WDTCTL = WDTPW|WDTHOLD;                   // Stop watchdog timer
+       P1OUT = LED1;                                   // Preload LED1 on, LED2 off
+       P1DIR = LED1|LED2;                          // Set pins for LED1,2 to output
+       TACCR0 = 4999;                     // Upper limit of count for TAR
+       TACTL = MC_1|ID_3|TASSEL_2|TACLR;     // Set up and start Timer A
+       // Up to "CCR0" mode, divide clock by 8, clock from SMCLK, clear timer
+
+       for (;;) {                                      // Loop forever
+           while ((TACTL & TAIFG) == 0) {    // Wait for overflow
+           }                                                 // doing nothing
+           TACTL &= ~TAIFG;                        // Clear overflow flag
+           P1OUT ^= LED1|LED2;                     // Toggle LEDs
+       }
+       // Back around infinite loop
+
+}
+
+void SwitchingLed()
+{
+    volatile uint16_t counter;
+
+       WDTCTL = WDTPW | WDTHOLD;
+       P1OUT = ~LED1;
+       P1DIR = LED1 | LED2;
+
+       while(1)
+       {
+           for(counter=0; counter < 50000; counter++);
+
+           P1OUT ^= LED1 | LED2;
+       }
+}
+void PressedLedTurnOff()
+{
+    WDTCTL = WDTPW | WDTHOLD;
+     P1OUT &= ~LED1;
+     P1DIR |= LED1;
+     P1REN |= B1;
+     P1OUT |= B1;
+
+
+     while(1)
+     {
+         while((P1IN & B1) != 0) {}
+         P1OUT |= LED1;
+
+         while((P1IN & B1) == 0) {}
+         P1OUT &= ~LED1;
+
+     }
+}
+
+/*
+void ISRLedSwitcher()
+{
+    WDTCTL = WDTPW | WDTHOLD;
+      P1OUT = LED1;
+      P1DIR = LED1 | LED2;
+      TACCR0 = 30000;
+      TACCTL0 = CCIE;
+
+      TACTL = MC_1 | TASSEL_1 | TACLR;
+
+      while(1)
+      {
+          __bis_SR_register(GIE | LPM3_bits);
+      }
+}
+#pragma vector=TIMER0_A0_VECTOR
+__interrupt void TA0_ISR()
+{
+    P1OUT ^= LED1 | LED2;
+}
+*/
+
+void Timer()
+{
+
+    P1OUT = LED1;
+    P1DIR = LED1 | LED2;
+
+    TACCR0 = 49999;
+    TACTL = MC_1 | TASSEL_1 | TACLR;
+
+    while(1)
+    {
+        while((TACTL & TAIFG) == 0);
+
+        TACTL &= ~TAIFG;
+        P1OUT ^= LED1 | LED2;
+
+    }
 
 }
 
@@ -113,6 +215,46 @@ __interrupt void P1_Function()
 }
 */
 
+void ButtonWithStoppingLed()
+{
+    P1DIR &= ~SW;
+    P1REN |= SW;
+    P1OUT |= SW;
+
+    P1OUT = ~LED1;
+    P1OUT = ~LED2;
+    P1DIR = LED1 | LED2;
+
+    volatile uint16_t counter = 0;
+    int check = 0;
+
+    while(1)
+        {
+            if(!(P1IN & SW))
+            {
+
+
+                while(!(P1IN & SW));
+
+                check =  !check;
+            }
+
+            if(check == 1)
+            {
+                for(counter = 0; counter < LONG_DELAY; counter++)
+                           {
+                           }
+
+               P1OUT ^= LED1 | LED2;
+            }
+            else
+            {
+                P1OUT = ~LED1;
+                P1OUT = ~LED2;
+            }
+        }
+
+}
 void ButtonWithSwitchingLeds()
 {
     P1DIR |= RED + GREEN;
@@ -145,6 +287,7 @@ void ButtonWithSwitchingLeds()
           P1OUT |= GREEN;             // Green -> ON
       }
     }
+
 }
 void ButtonWithDebouncing2()
 {
@@ -188,6 +331,37 @@ void ButtonWithDebouncing()
 
        }
 }
+
+void Button3()
+{
+
+    WDTCTL = WDTPW | WDTHOLD;
+    P1OUT &= ~LED1;
+    P1DIR |= LED1;
+    P1REN |= B1;
+    P1OUT |= B1;
+
+
+/*
+    for(;;) {
+      while((P1IN & B1) != 0){}     // loop while button is up (active low)
+      P1OUT ^= LED1;                // button has been pressed, toggle led
+      while((P1IN & B1) == 0){}     // loop while button is down
+    }
+*/
+
+ /*
+    while(1)
+    {
+        if((P1IN & BIT3) == 0)
+        {
+            P1OUT ^= BIT0;
+        }
+
+    }
+*/
+
+}
 void Button2()
 {
     P1DIR |= BIT0;
@@ -215,19 +389,19 @@ void Button()
 {
     WDTCTL = WDTPW | WDTHOLD;   // Stop watchdog timer
 
-       P1DIR &= ~BIT3; //Set P1.3 as input
-       P1REN |= BIT3; //Enable pullup/pulldown resistors for P1.3
-       P1OUT |= BIT3; //Set P1.3 to have pull up resistors
+   P1DIR &= ~BIT3; //Set P1.3 as input
+   P1REN |= BIT3; //Enable pullup/pulldown resistors for P1.3
+   P1OUT |= BIT3; //Set P1.3 to have pull up resistors
 
-       P1DIR |=BIT0; //Set P1.0 as output
+   P1DIR |=BIT0; //Set P1.0 as output
 
-       while(1) //Run the below code forever
-       {
-           if((P1IN&BIT3)==(BIT3)) //If P1.3 is logical HIGH
-               P1OUT&=~BIT0; //Turn off the LED
-           else
-               P1OUT|=BIT0; //Else, turn on the LED
-       }
+   while(1) //Run the below code forever
+   {
+       if((P1IN&BIT3)==(BIT3)) //If P1.3 is logical HIGH
+           P1OUT&=~BIT0; //Turn off the LED
+       else
+           P1OUT|=BIT0; //Else, turn on the LED
+   }
 }
 
 void ChangingFrequencyOfMultipleBlinking()
