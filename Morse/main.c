@@ -27,6 +27,7 @@ void Init();
 
 int main(void)
 {
+    Init();
 
 
 

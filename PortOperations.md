@@ -15,7 +15,24 @@ They can only be enabled when gpio is in input mode. in order to control this, a
 	* PxREN: each bit enables 1 or dsables 0 pull up or pull down resistors for the particular pin controlled by the bit.
 	* PxOut: when the pin is in input mode and ren is enabled, this register selects whether the resistors is a pull up or pull down.
 
-Pxren only controls whether the functionality is enabled. Pout in this mode is the one that controles whether the resistor is pull- up and down. A word of caution is in place. 
+Pxren only controls whether the functionality is enabled. Pout in this mode is the one that controles 
+whether the resistor is pull- up and down. A word of caution is in place. 
+
+#### Power Up defaults
+before any code is executed, registers controlling the msp430 are cleared to defaults. This includes PxSel set to 0, along with pxdir.
+
+	* PxSel2 PxSel		PinFunction
+	*  0       0              I/O is selected      
+	*  0       1	          Primary peripheral module function is selected
+	*  1       0              Reserved. See device specific data sheet
+	*  1       1              Secondary peripheral module function is selected
+
+* Register	 0	 		1
+* PxSEL	 	Input/Output	 Peripheral Module
+* PxIN 		Input is '0' 	Input is '1'
+* PxOUT 	Output is '0' 	Output is '1'
+* PxDIR 	Pin is Input 	Pin is Output
+
 
 #### Interrupt capability
 some gpios have the capability to generate an interrupt and inform the cpu when a transtion has occured. 
