@@ -1,117 +1,175 @@
-// http://www.ocfreaks.com/msp430-timer-programming-tutorial/
 #include <msp430.h>
 
+#define IN BIT4  // Button connected to P1.3
+#define LED BIT6     // Green LED connected to P1.6
+#define LED2 BIT0     // Green LED connected to P1.6
+#define BUZZER  BIT7
 
-void initTimer_A(void);
-void delayMS(int msecs);
+unsigned long buttonPressedTime = 0;
+int morsePos = 0;  // Morse code buffer position
+int dotTime = 250; // Time in milliseconds for a dot
+int dashTime = 500; // Time in milliseconds for a dash
+int resetTime = 1000; // Time in milliseconds to reset
+int OFCount = 0;
+volatile int indexCounter = 0;
+int check = 0;
 
-unsigned int OFCount;
-
-int main(void)
-{
 
 
+const char *morseAlphabet[] = {
+        ".-",   // A
+        "-...", // B
+        "-.-.", // C
+        "-..",  // D
+        ".",    // E
+        "..-.", // F
+        "--.",  // G
+        "....", // H
+        "..",   // I
+        ".---", // J
+        "-.-",  // K
+        ".-..", // L
+        "--",   // M
+        "-.",   // N
+        "---",  // O
+        ".--.", // P
+        "--.-", // Q
+        ".-.",  // R
+        "...",  // S
+        "-",    // T
+        "..-",  // U
+        "...-", // V
+        ".--",  // W
+        "-..-", // X
+        "-.--", // Y
+        "--.."  // Z
+};
+
+void buzzerOn() {
+    P1OUT |= BUZZER;
+}
+
+void buzzerOff() {
+    P1OUT &= ~BUZZER;
 }
 
 
-/*
-void Example2()
-{
-    WDTCTL = WDTPW + WDTHOLD; //Stop watchdog timer
-    P1DIR |= BIT0; //Configure P1.0 as Output
-
-    //Set MCLK = SMCLK = 1MHz
-    BCSCTL1 = CALBC1_1MHZ;
-    DCOCTL = CALDCO_1MHZ;
-
-    initTimer_A();
-    _enable_interrupt();
-
-    while(1)
-    {
-        P1OUT |= BIT0; //Drive P1.0 HIGH - LED1 ON
-        delayMS(500); //Wait 0.5 Secs
-
-        P1OUT &= ~BIT0; //Drive P1.0 LOW - LED1 OFF
-        delayMS(500); //Wait 0.5 Secs
-    }
-}
-void initTimer_A(void)
-{
-    //Timer0_A3 Configuration
-    TACCR0 = 0; //Initially, Stop the Timer
-    TACCTL0 |= CCIE; //Enable interrupt for CCR0.
-    TACTL = TASSEL_2 + ID_0 + MC_1; //Select SMCLK, SMCLK/1, Up Mode
-}
-
-void delayMS(int msecs)
-{
-    OFCount = 0; //Reset Over-Flow counter
-    TACCR0 = 1000-1; //Start Timer, Compare value for Up Mode to get 1ms delay per loop
-    //Total count = TACCR0 + 1. Hence we need to subtract 1.
-
-    while(i<=msecs);
-
-    TACCR0 = 0; //Stop Timer
-}
-
-//Timer ISR
-#pragma vector = TIMER0_A0_VECTOR
-__interrupt void Timer_A_CCR0_ISR(void)
-{
-    OFCount++; //Increment Over-Flow Counter
-}
-*/
-
-
-/*
-void Example1()
-{
-    WDTCTL = WDTPW + WDTHOLD; //Stop watchdog timer
-    P1DIR |= BIT0; //Configure P1.0 as Output
-
-    //Set MCLK = SMCLK = 1MHz
-    BCSCTL1 = CALBC1_1MHZ;
-    DCOCTL = CALDCO_1MHZ;
-
-
-    initTimer_A();
-    _enable_interrupt();
-
-    while(1)
-    {
-        P1OUT |= BIT0; //Drive P1.0 HIGH - LED1 ON
-        delayMS(500); //Wait 0.5 Secs
-
-        P1OUT &= ~BIT0; //Drive P1.0 LOW - LED1 OFF
-        delayMS(500); //Wait 0.5 Secs
+int findMorseIndex(char *morse) {
+    volatile int index = -1; // Default index if not found
+    volatile int i = 0;
+    for (i = 0; i < sizeof(morseAlphabet) / sizeof(morseAlphabet[0]); i++) {
+        if (strcmp(morseAlphabet[i], morse) == 0) {
+            index = i; // Set the index if the Morse code is found
+            break;
+        }
     }
 
+    return index;
 }
 
-void initTimer_A(void)
+
+void delayForOn(unsigned int n)
 {
-    //Timer0_A3 Configuration
-    TACCR0 = 0; //Initially, Stop the Timer
-    TACCTL0 |= CCIE; //Enable interrupt for CCR0.
-    TACTL = TASSEL_2 + ID_0 + MC_1; //Select SMCLK, SMCLK/1, Up Mode
+    unsigned int i;
+    for (i = 0; i < n; i++)
+    {
+        __delay_cycles(1000); // 1ms delay at 1MHz clock speed
+        if ((P1IN & IN ) != 0) break;
+    }
 }
-
-void delayMS(int msecs)
+void delayForOff(unsigned int n)
 {
-    OFCount = 0; //Reset Over-Flow counter
-    TACCR0 = 1000-1; //Start Timer, Compare value for Up Mode to get 1ms delay per loop
-    //Total count = TACCR0 + 1. Hence we need to subtract 1.
-
-    while(OFCount<=msecs);
-
-    TACCR0 = 0; //Stop Timer
+    unsigned int i;
+    for (i = 0; i < n; i++)
+    {
+        __delay_cycles(1000); // 1ms delay at 1MHz clock speed
+        if((P1IN & IN ) == 0)
+            break;
+    }
 }
 
-//Timer ISR
-#pragma vector = TIMER0_A0_VECTOR
-__interrupt void Timer_A_CCR0_ISR(void)
+void main(void)
 {
-    OFCount++; //Increment Over-Flow Counter
+    volatile int indexCounter = 0;
+    char adder;
+    volatile char morseCode[6]; // Morse code buffer to store dots and dashes
+
+    WDTCTL = WDTPW | WDTHOLD; // Watchdog Timer'ı durdur
+
+    P1DIR |= BIT0;  // P1.0'i bir çıkış olarak ayarla (Kırmızı LED için)
+    P1DIR |= BIT6;  // P1.6'yı bir çıkış olarak ayarla (Yeşil LED için)
+
+
+    P1DIR &= ~IN; // P1.3'ü bir giriş olarak ayarla (Düğme için)
+    P1REN |= IN ;  // P1.3 için pull-up/pull-down direncini etkinleştir
+
+    P1DIR |= BUZZER;
+    P1OUT &= ~BUZZER; // Buzzer'ı başlangıçta kapalı tut
+
+
+    while (1)
+    {
+        if ((P1IN & IN ) == 0)
+        {
+            // Düğme basılıysa
+            P1OUT |= BIT0; // Yeşil LED'i aç
+            buzzerOn();
+
+            adder = '.';
+
+            delayForOn(250); // 0.25 saniye gecikme
+
+            if ((P1IN & IN ) == 0)
+            {
+                // Düğme hala basılıysa (0.25 saniye boyunca basıldı)
+                P1OUT &= ~BIT0; // Yeşil LED'i kapat
+                P1OUT |= BIT6; // Kırmızı LED'i aç
+                adder = '-';
+                while((P1IN & IN ) == 0);
+            }
+            buzzerOff();
+
+            morseCode[indexCounter] = adder;
+            indexCounter++;
+
+        }
+        else if(morseCode[0] != '\0')
+        {
+
+            // Düğme basılı değilse
+            P1OUT &= ~BIT0; // Kırmızı LED'i kapat
+            P1OUT &= ~BIT6; // Yeşil LED'i kapat
+
+
+            delayForOff(1000);    // 1 saniye bekle
+
+            if ((P1IN & IN ) != 0)
+            {
+
+                morseCode[indexCounter] = '\0';
+
+                if(findMorseIndex(morseCode) != -1)
+                {
+                    P1OUT |= BIT0; // Kırmızı LED'i aç
+                    delayForOff(1000);
+                    P1OUT &= ~BIT0; // Yeşil LED'i kapat
+
+                }
+                else
+                {
+
+                     P1OUT |= BIT6; // Kırmızı LED'i aç
+                     delayForOff(1000);
+                     P1OUT &= ~BIT6; // Yeşil LED'i kapat
+                }
+
+                indexCounter = 0;
+
+                memset(morseCode, '\0', sizeof(morseCode));
+
+            }
+
+        }
+    }
 }
-*/
+
